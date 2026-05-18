@@ -3,21 +3,9 @@
 #include <conio.h>
 #include <ctime>
 #include <cstdlib>
-#include <string>
-using namespace std;
 
-// 游戏状态枚举
 enum GameStatus { WIN, LOSE, CONTINUE };
 
-void DrawDiceFace(IMAGE* img, int value);
-void DrawBackground();
-void DrawWinImage();
-void DrawLoseImage();
 void InitGraphics();
-void ShowRollingDice(int x, int y);
-void DrawGameUI(int point = 0);
-int RollDice();
-GameStatus Game();
-void Help();
-int ShowMainMenu();
-void Run(); 
+void DrawGameUI(int point = 0);  // 声明带默认参数
+void Run();
