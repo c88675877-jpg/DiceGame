@@ -20,17 +20,22 @@ void DrawPanel(int x1, int y1, int x2, int y2, COLORREF fillColor, COLORREF bord
     fillroundrect(x1, y1, x2, y2, 12, 12);
 }
 
+// 通用居中文字绘制
+void DrawCenteredText(int x1, int y1, int x2, int y2, const TCHAR* text, int textSize, COLORREF textColor, const TCHAR* fontName) {
+    setbkmode(TRANSPARENT);
+    settextstyle(textSize, 0, fontName);
+    settextcolor(textColor);
+    int tw = textwidth(text);
+    int th = textheight(text);
+    outtextxy(x1 + (x2 - x1 - tw) / 2, y1 + (y2 - y1 - th) / 2, text);
+}
+
 // 绘制按钮
 void DrawButton(int x1, int y1, int x2, int y2, COLORREF color, const TCHAR* text, int textSize = 28) {
     setfillcolor(color);
     setlinecolor(RGB(200, 200, 200));
     fillroundrect(x1, y1, x2, y2, 8, 8);
-    setbkmode(TRANSPARENT);
-    settextstyle(textSize, 0, _T("黑体"));
-    settextcolor(RGB(255, 255, 255));
-    int tw = textwidth(text);
-    int th = textheight(text);
-    outtextxy(x1 + (x2 - x1 - tw) / 2, y1 + (y2 - y1 - th) / 2, text);
+    DrawCenteredText(x1, y1, x2, y2, text, textSize, RGB(255, 255, 255), _T("黑体"));
 }
 
 // 绘制单个骰子面
@@ -69,10 +74,7 @@ void DrawBackground() {
     cleardevice();
     setfillcolor(RGB(46, 125, 50));
     fillroundrect(20, 15, 780, 95, 20, 20);
-    setbkmode(TRANSPARENT);
-    settextstyle(56, 0, _T("黑体"));
-    settextcolor(RGB(255, 255, 230));
-    outtextxy(280, 25, _T("骰子游戏"));
+    DrawCenteredText(20, 15, 780, 95, _T("骰子游戏"), 56, RGB(255, 255, 230), _T("黑体"));
     DrawPanel(60, 115, 740, 575, RGB(30, 40, 65), RGB(100, 160, 230));
     SetWorkingImage(NULL);
 }
@@ -85,12 +87,7 @@ void DrawResultImage(IMAGE* img, const TCHAR* text) {
         pBuffer[i] = 0x00000000; // ARGB = 全透明
     }
 	DrawPanel(0, 0, 249, 249, RGB(20, 30, 55), RGB(80, 140, 210));
-    setbkmode(TRANSPARENT);
-    settextstyle(40, 0, _T("黑体"));
-    settextcolor(RGB(255, 255, 230));
-    int tw = textwidth(text);
-    int th = textheight(text);
-    outtextxy((250 - tw) / 2,  (250 - th) / 2, text);
+    DrawCenteredText(0, 0, 250, 200, text, 40, RGB(255, 255, 230), _T("黑体"));
     SetWorkingImage(NULL);
 }
 
@@ -132,10 +129,7 @@ int RollDice() {
     int sum = d1 + d2 + 2;
     TCHAR str[50];
     _stprintf_s(str, _T("总和: %d"), sum);
-    setbkmode(TRANSPARENT);
-    settextstyle(44, 0, _T("黑体"));
-    settextcolor(RGB(255, 215, 0));
-    outtextxy(320, 395, str);
+    DrawCenteredText(340, 390, 460, 450, str, 30, RGB(255, 215, 0), _T("黑体"));
     return sum;
 }
 
@@ -150,9 +144,7 @@ void DrawGameUI(int point, bool showRollBtn) {
         fillroundrect(250, 118, 550, 165, 10, 10);
         TCHAR str[50];
         _stprintf_s(str, _T("目标点数: %d"), point);
-        settextstyle(36, 0, _T("黑体"));
-        settextcolor(RGB(80, 40, 0));
-        outtextxy(280, 125, str);
+        DrawCenteredText(250, 118, 550, 165, str, 36, RGB(80, 40, 0), _T("黑体"));
     }
 
     // 掷骰子按钮: 仅在游戏中显示，放在面板底部
@@ -189,10 +181,7 @@ GameStatus Game() {
 		DrawPanel(250, 118, 550, 165, RGB(255, 193, 7), RGB(200, 150, 50));
         TCHAR str[50];
         _stprintf_s(str, _T("目标点数: %d"), point);
-        setbkmode(TRANSPARENT);
-        settextstyle(36, 0, _T("黑体"));
-        settextcolor(RGB(80, 40, 0));
-        outtextxy(310, 125, str);
+        DrawCenteredText(250, 118, 550, 165, str, 36, RGB(80, 40, 0), _T("黑体"));
         btnRoll = { 340, 470, 460, 520 };
         DrawButton(340, 470, 460, 520, RGB(46, 204, 113), _T("掷骰子"), 28);
     }
@@ -209,34 +198,19 @@ GameStatus Game() {
         }
     }
 
-    // 显示结果面板: 在当前画面(含骰子和总和)上叠加结果
-   /* DrawPanel(260, 190, 540, 380, RGB(20, 30, 55), (status == WIN) ? RGB(80, 230, 140) : RGB(231, 76, 60));
-    setbkmode(TRANSPARENT);*/
-    // 显示结果面板: 使用你画好的渐变图片
+    // 显示结果面板: 使用预先绘制的渐变图片，并在图片内绘制返回按钮
     if (status == WIN) {
-        // 显示胜利渐变框，居中显示
-        putimage(290, 230, &imgWin);
-
-       /* // 额外的提示文字（可选，如果你想保留）
-        setbkmode(TRANSPARENT);
-        settextstyle(24, 0, _T("宋体"));
-        settextcolor(RGB(200, 230, 200));
-        outtextxy(330, 360, _T("恭喜，你赢了!"));*/
+		Sleep(2000); // 稍作停顿，增加胜利/失败的戏剧效果
+        putimage(275, 200, &imgWin);
     }
     else {
-        // 显示失败渐变框，居中显示
-        putimage(290, 230, &imgLose);
-
-        /*// 额外的提示文字（可选，如果你想保留）
-        setbkmode(TRANSPARENT);
-        settextstyle(24, 0, _T("宋体"));
-        settextcolor(RGB(230, 200, 200));
-        outtextxy(310, 360, _T("运气不好，再试试!"));*/
+        Sleep(2000); // 稍作停顿，增加胜利/失败的戏剧效果
+        putimage(275, 200, &imgLose);
     }
 
-    // 返回按钮（位置稍微调整一下，因为渐变框变小了）
-    Button btnBack = { 330, 300, 470, 330 };
-    DrawButton(325, 330, 470, 380, RGB(52, 152, 219), _T("返回菜单"), 24);
+    // 返回按钮: 位置调整到结果图片内部底部
+    Button btnBack = { 320, 390, 480, 430 };
+    DrawButton(320, 370, 480, 410, RGB(52, 152, 219), _T("返回菜单"), 24);
     WaitForButtonClick(btnBack);
 	return status;
 }
@@ -245,10 +219,7 @@ void Help() {
     DrawGameUI();
     DrawPanel(100, 140, 700, 530, RGB(20, 30, 55), RGB(80, 140, 210));
 
-    setbkmode(TRANSPARENT);
-    settextstyle(40, 0, _T("黑体"));
-    settextcolor(RGB(255, 215, 0));
-    outtextxy(280, 160, _T("游戏规则"));
+    DrawCenteredText(100, 140, 700, 210, _T("游戏规则"), 40, RGB(255, 215, 0), _T("黑体"));
 
     // 分割线
     setlinecolor(RGB(80, 140, 210));
@@ -256,6 +227,7 @@ void Help() {
 
     settextstyle(22, 0, _T("宋体"));
     settextcolor(RGB(200, 210, 230));
+    setbkmode(TRANSPARENT);
     outtextxy(150, 230, _T("1. 第一次掷出 7 或 11，玩家获胜"));
     outtextxy(150, 265, _T("2. 第一次掷出 2、3 或 12，玩家失败"));
     outtextxy(150, 300, _T("3. 掷出其他数字，该数字成为目标点数"));
@@ -270,12 +242,9 @@ void Help() {
 
 int ShowMainMenu() {
     DrawGameUI();
-    setbkmode(TRANSPARENT);
 
     // 标题
-    settextstyle(44, 0, _T("黑体"));
-    settextcolor(RGB(255, 255, 255));
-    outtextxy(335, 170, _T("主菜单"));
+    DrawCenteredText(60, 170, 740, 220, _T("主菜单"), 44, RGB(255, 255, 255), _T("黑体"));
 
     // 按钮: 加大间距，整体居中在面板内 (面板 y: 115~575，可用中心区域 y: 220~520)
     int btnX = 260, btnW = 280, btnH = 55, gap = 25;
@@ -289,9 +258,7 @@ int ShowMainMenu() {
     DrawButton(btnExit.x1,  btnExit.y1,  btnExit.x2,  btnExit.y2,  RGB(231, 76, 60),   _T("退出游戏"), 28);
 
     // 底部提示
-    settextstyle(20, 0, _T("宋体"));
-    settextcolor(RGB(120, 150, 190));
-    outtextxy(310, startY + 3 * btnH + 2 * gap + 40, _T("请用鼠标点击按钮"));
+    DrawCenteredText(60, startY + 3 * btnH + 2 * gap + 20, 740, startY + 3 * btnH + 2 * gap + 80, _T("请用鼠标点击按钮"), 20, RGB(120, 150, 190), _T("宋体"));
 
     // 等待鼠标点击并返回对应选项
     while (true) {
@@ -324,29 +291,22 @@ void Run() {
             // 战绩统计面板
             DrawGameUI();
             DrawPanel(200, 180, 600, 440, RGB(20, 30, 55), RGB(100, 160, 230));
-            setbkmode(TRANSPARENT);
 
-            settextstyle(36, 0, _T("黑体"));
-            settextcolor(RGB(255, 215, 0));
-            outtextxy(310, 195, _T("对局统计"));
+            DrawCenteredText(200, 180, 600, 240, _T("对局统计"), 36, RGB(255, 215, 0), _T("黑体"));
 
             setlinecolor(RGB(80, 140, 210));
             line(220, 240, 580, 240);
 
             TCHAR str[100];
             _stprintf_s(str, _T("胜利: %d 次"), wins);
-            settextstyle(28, 0, _T("黑体"));
-            settextcolor(RGB(80, 230, 140));
-            outtextxy(260, 265, str);
+            DrawCenteredText(200, 250, 600, 300, str, 28, RGB(80, 230, 140), _T("黑体"));
 
             _stprintf_s(str, _T("总计: %d 次"), total);
-            settextcolor(RGB(200, 210, 230));
-            outtextxy(260, 310, str);
+            DrawCenteredText(200, 300, 600, 345, str, 28, RGB(200, 210, 230), _T("黑体"));
 
             if (total > 0) {
                 _stprintf_s(str, _T("胜率: %d%%"), wins * 100 / total);
-                settextcolor(RGB(255, 215, 0));
-                outtextxy(260, 355, str);
+                DrawCenteredText(200, 345, 600, 390, str, 28, RGB(255, 215, 0), _T("黑体"));
             }
 
             Button btnContinue = { 340, 400, 460, 435 };
@@ -357,11 +317,8 @@ void Run() {
         case 3:
             DrawGameUI();
             DrawPanel(200, 200, 600, 420, RGB(20, 30, 55), RGB(100, 160, 230));
-            setbkmode(TRANSPARENT);
 
-            settextstyle(36, 0, _T("黑体"));
-            settextcolor(RGB(255, 215, 0));
-            outtextxy(325, 215, _T("游戏结束"));
+            DrawCenteredText(200, 200, 600, 260, _T("游戏结束"), 36, RGB(255, 215, 0), _T("黑体"));
 
             setlinecolor(RGB(80, 140, 210));
             line(220, 260, 580, 260);
@@ -369,14 +326,10 @@ void Run() {
             {
                 TCHAR finalStr[100];
                 _stprintf_s(finalStr, _T("最终战绩: %d 胜 / %d 局"), wins, total);
-                settextstyle(28, 0, _T("黑体"));
-                settextcolor(RGB(200, 210, 230));
-                outtextxy(240, 290, finalStr);
+                DrawCenteredText(200, 270, 600, 330, finalStr, 28, RGB(200, 210, 230), _T("黑体"));
             }
 
-            settextcolor(RGB(150, 170, 200));
-            settextstyle(24, 0, _T("宋体"));
-            outtextxy(350, 340, _T("谢谢游玩!"));
+            DrawCenteredText(200, 330, 600, 370, _T("谢谢游玩!"), 24, RGB(150, 170, 200), _T("宋体"));
 
             Button btnExitConfirm = { 340, 380, 460, 415 };
             DrawButton(340, 380, 460, 415, RGB(231, 76, 60), _T("退出"), 28);
