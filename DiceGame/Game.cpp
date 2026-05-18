@@ -47,7 +47,6 @@ void DrawDiceFace(IMAGE* img, int value) {
     for (int i = 0; i < 60 * 60; i++) {
         pBuffer[i] = 0x00000000; // ARGB = 全透明
     }
-    setbkmode(TRANSPARENT);
     setfillcolor(RGB(250, 250, 252));
     setlinecolor(RGB(200, 200, 210));
     fillroundrect(0, 0, 60, 60, 10, 10);
@@ -78,23 +77,20 @@ void DrawBackground() {
     SetWorkingImage(NULL);
 }
 
-void DrawResultImage(IMAGE* img, const TCHAR* text, COLORREF bgStart, COLORREF bgEnd) {
+void DrawResultImage(IMAGE* img, const TCHAR* text) {
     SetWorkingImage(img);
+    DWORD* pBuffer = GetImageBuffer();
     cleardevice();
-    for (int i = 0; i < 100; i++) {
-        COLORREF c = RGB(
-            GetRValue(bgStart) + (GetRValue(bgEnd) - GetRValue(bgStart)) * i / 100,
-            GetGValue(bgStart) + (GetGValue(bgEnd) - GetGValue(bgStart)) * i / 100,
-            GetBValue(bgStart) + (GetBValue(bgEnd) - GetBValue(bgStart)) * i / 100);
-        setlinecolor(c);
-        line(0, i, 220, i);
+    for (int i = 0; i < 220 * 100; i++) {
+        pBuffer[i] = 0x00000000; // ARGB = 全透明
     }
-    setlinecolor(RGB(100, 230, 120));
-    roundrect(0, 0, 219, 99, 12, 12);
+	DrawPanel(0, 0, 249, 249, RGB(20, 30, 55), RGB(80, 140, 210));
     setbkmode(TRANSPARENT);
     settextstyle(40, 0, _T("黑体"));
     settextcolor(RGB(255, 255, 230));
-    outtextxy(50, 28, text);
+    int tw = textwidth(text);
+    int th = textheight(text);
+    outtextxy((250 - tw) / 2,  (250 - th) / 2, text);
     SetWorkingImage(NULL);
 }
 
@@ -106,10 +102,10 @@ void InitGraphics() {
     }
     imgBackground.Resize(800, 600);
     DrawBackground();
-    imgWin.Resize(220, 100);
-    DrawResultImage(&imgWin, _T("胜利!"), RGB(46, 160, 67), RGB(30, 120, 50));
-    imgLose.Resize(220, 100);
-    DrawResultImage(&imgLose, _T("失败"), RGB(210, 60, 50), RGB(160, 30, 25));
+    imgWin.Resize(250, 250);
+    DrawResultImage(&imgWin, _T("胜利!"));
+    imgLose.Resize(250, 250);
+    DrawResultImage(&imgLose, _T("失败"));
 }
 
 // 骰子滚动动画
@@ -125,7 +121,7 @@ void ShowRolling(int x, int y) {
 // 掷骰子并显示结果
 int RollDice() {
     int d1 = rand() % 6, d2 = rand() % 6;
-    int diceX = 328, diceY = 313;
+    int diceX = 328, diceY = 290;
     // 用背景图清除骰子区域和上一次的总和文字，避免黑色框和重叠
     putimage(diceX - 10, diceY - 10, 164, 84, &imgBackground, diceX - 10, diceY - 10, SRCCOPY);
     putimage(300, 390, 260, 60, &imgBackground, 300, 390, SRCCOPY);
@@ -139,7 +135,7 @@ int RollDice() {
     setbkmode(TRANSPARENT);
     settextstyle(44, 0, _T("黑体"));
     settextcolor(RGB(255, 215, 0));
-    outtextxy(340, 395, str);
+    outtextxy(320, 395, str);
     return sum;
 }
 
@@ -156,7 +152,7 @@ void DrawGameUI(int point, bool showRollBtn) {
         _stprintf_s(str, _T("目标点数: %d"), point);
         settextstyle(36, 0, _T("黑体"));
         settextcolor(RGB(80, 40, 0));
-        outtextxy(310, 125, str);
+        outtextxy(280, 125, str);
     }
 
     // 掷骰子按钮: 仅在游戏中显示，放在面板底部
@@ -189,9 +185,8 @@ GameStatus Game() {
     else {
         status = CONTINUE;
         point = sum;
-        // 只更新目标点数提示和按钮，保留骰子和总和显示
-        setfillcolor(RGB(255, 193, 7));
-        fillroundrect(250, 118, 550, 165, 10, 10);
+        // 只更新目标点数提示和按钮，保留骰子和总和显
+		DrawPanel(250, 118, 550, 165, RGB(255, 193, 7), RGB(200, 150, 50));
         TCHAR str[50];
         _stprintf_s(str, _T("目标点数: %d"), point);
         setbkmode(TRANSPARENT);
@@ -215,29 +210,35 @@ GameStatus Game() {
     }
 
     // 显示结果面板: 在当前画面(含骰子和总和)上叠加结果
-    DrawPanel(260, 220, 540, 380, RGB(20, 30, 55), (status == WIN) ? RGB(80, 230, 140) : RGB(231, 76, 60));
-    setbkmode(TRANSPARENT);
+   /* DrawPanel(260, 190, 540, 380, RGB(20, 30, 55), (status == WIN) ? RGB(80, 230, 140) : RGB(231, 76, 60));
+    setbkmode(TRANSPARENT);*/
+    // 显示结果面板: 使用你画好的渐变图片
     if (status == WIN) {
-        settextstyle(44, 0, _T("黑体"));
-        settextcolor(RGB(80, 230, 140));
-        outtextxy(340, 240, _T("胜利!"));
+        // 显示胜利渐变框，居中显示
+        putimage(290, 230, &imgWin);
+
+       /* // 额外的提示文字（可选，如果你想保留）
+        setbkmode(TRANSPARENT);
         settextstyle(24, 0, _T("宋体"));
         settextcolor(RGB(200, 230, 200));
-        outtextxy(300, 300, _T("恭喜，你赢了!"));
+        outtextxy(330, 360, _T("恭喜，你赢了!"));*/
     }
     else {
-        settextstyle(44, 0, _T("黑体"));
-        settextcolor(RGB(231, 76, 60));
-        outtextxy(340, 240, _T("失败"));
+        // 显示失败渐变框，居中显示
+        putimage(290, 230, &imgLose);
+
+        /*// 额外的提示文字（可选，如果你想保留）
+        setbkmode(TRANSPARENT);
         settextstyle(24, 0, _T("宋体"));
         settextcolor(RGB(230, 200, 200));
-        outtextxy(310, 300, _T("运气不好，再试试!"));
+        outtextxy(310, 360, _T("运气不好，再试试!"));*/
     }
-    Button btnBack = { 330, 340, 470, 375 };
-    DrawButton(330, 340, 470, 375, RGB(52, 152, 219), _T("返回菜单"), 24);
-    WaitForButtonClick(btnBack);
 
-    return status;
+    // 返回按钮（位置稍微调整一下，因为渐变框变小了）
+    Button btnBack = { 330, 300, 470, 330 };
+    DrawButton(325, 330, 470, 380, RGB(52, 152, 219), _T("返回菜单"), 24);
+    WaitForButtonClick(btnBack);
+	return status;
 }
 
 void Help() {
@@ -274,7 +275,7 @@ int ShowMainMenu() {
     // 标题
     settextstyle(44, 0, _T("黑体"));
     settextcolor(RGB(255, 255, 255));
-    outtextxy(300, 170, _T("主菜单"));
+    outtextxy(335, 170, _T("主菜单"));
 
     // 按钮: 加大间距，整体居中在面板内 (面板 y: 115~575，可用中心区域 y: 220~520)
     int btnX = 260, btnW = 280, btnH = 55, gap = 25;
@@ -360,7 +361,7 @@ void Run() {
 
             settextstyle(36, 0, _T("黑体"));
             settextcolor(RGB(255, 215, 0));
-            outtextxy(300, 215, _T("游戏结束"));
+            outtextxy(325, 215, _T("游戏结束"));
 
             setlinecolor(RGB(80, 140, 210));
             line(220, 260, 580, 260);
@@ -375,7 +376,7 @@ void Run() {
 
             settextcolor(RGB(150, 170, 200));
             settextstyle(24, 0, _T("宋体"));
-            outtextxy(320, 340, _T("谢谢游玩!"));
+            outtextxy(350, 340, _T("谢谢游玩!"));
 
             Button btnExitConfirm = { 340, 380, 460, 415 };
             DrawButton(340, 380, 460, 415, RGB(231, 76, 60), _T("退出"), 28);
