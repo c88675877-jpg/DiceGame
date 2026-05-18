@@ -1,4 +1,4 @@
-﻿// Game.cpp
+﻿
 #include "Game.h"
 
 IMAGE imgDice[6];
@@ -35,8 +35,18 @@ void DrawButton(int x1, int y1, int x2, int y2, COLORREF color, const TCHAR* tex
 
 // 绘制单个骰子面
 void DrawDiceFace(IMAGE* img, int value) {
+    // 1. 把这张图片设置为 32位带透明通道（关键！）
+    img->Resize(60, 60);  // 确保大小 60x60
+    
+
+    // 2. 设置绘图目标为这张图片
     SetWorkingImage(img);
-    cleardevice();
+
+    // 3. 清空整张图片为【完全透明】（不是黑色/白色！）
+    DWORD* pBuffer = GetImageBuffer();
+    for (int i = 0; i < 60 * 60; i++) {
+        pBuffer[i] = 0x00000000; // ARGB = 全透明
+    }
     setbkmode(TRANSPARENT);
     setfillcolor(RGB(250, 250, 252));
     setlinecolor(RGB(200, 200, 210));
