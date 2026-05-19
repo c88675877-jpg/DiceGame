@@ -35,7 +35,7 @@ void DrawPanel(int x1, int y1, int x2, int y2, COLORREF fillColor, COLORREF bord
 }
 
 // 通用居中文字绘制
-void DrawCenteredText(int x1, int y1, int x2, int y2, const TCHAR* text, int textSize, COLORREF textColor, const TCHAR* fontName) {
+void DrawCenteredText(int x1, int y1, int x2, int y2, const TCHAR* text,int textSize, COLORREF textColor, const TCHAR* fontName) {
     setbkmode(TRANSPARENT);
     settextstyle(textSize, 0, fontName);
     settextcolor(textColor);
@@ -91,7 +91,7 @@ void DrawBackground() {
     DrawPanel(60, 115, 740, 575, RGB(30, 40, 65), RGB(100, 160, 230));
     SetWorkingImage(NULL);
 }
-//绘制结算界面
+//绘制胜负弹窗
 void DrawResultImage(IMAGE* img, const TCHAR* text) {
     SetWorkingImage(img);
 	img->Resize(250, 250);
@@ -145,7 +145,7 @@ int RollDice() {
     return sum;
 }
 
-// 绘制游戏界面显示目标点数和掷骰子按钮 (showRollBtn 控制是否显示掷骰子按钮)
+// 绘制游戏界面显示背景板、目标点数和掷骰子按钮 
 void DrawGameUI(bool showbackground,int point, bool showRollBtn) {
     if (showbackground)
     {
@@ -169,7 +169,7 @@ void DrawGameUI(bool showbackground,int point, bool showRollBtn) {
 }
 
 
-
+//游戏状态，WIN:玩家获胜，LOSE:玩家失败，CONTINUE:继续游戏
 GameStatus Game() {
     DrawGameUI(true ,0, true);
     int sum = RollDice();
@@ -193,8 +193,6 @@ GameStatus Game() {
         else {
             // 本轮未分胜负，保留骰子结果，只重绘按钮
 			DrawGameUI(false ,point, true);
-            //btnRoll = { 340, 470, 460, 520 };
-            //DrawButton(340, 470, 460, 520, RGB(46, 204, 113), _T("掷骰子"), 28);
         }
     }
 
@@ -214,7 +212,7 @@ GameStatus Game() {
     WaitForButtonClick(btnBack);
 	return status;
 }
-
+//帮助界面
 void Help() {
     DrawGameUI(true,0,false);
     DrawPanel(100, 140, 700, 530, RGB(20, 30, 55), RGB(80, 140, 210));
@@ -239,7 +237,7 @@ void Help() {
     DrawButton(300, 470, 500, 510, RGB(52, 152, 219), _T("返回主菜单"), 28);
     WaitForButtonClick(btnHelpBack);
 }
-
+//主菜单
 int ShowMainMenu() {
     DrawGameUI(true, 0, false);
 
@@ -252,14 +250,12 @@ int ShowMainMenu() {
     btnHelp  = { btnX, startY,              btnX + btnW, startY + btnH };
     btnStart = { btnX, startY + btnH + gap,  btnX + btnW, startY + 2 * btnH + gap };
     btnExit  = { btnX, startY + 2 * (btnH + gap), btnX + btnW, startY + 3 * btnH + 2 * gap };
-
+    //绘制按钮
     DrawButton(btnHelp.x1,  btnHelp.y1,  btnHelp.x2,  btnHelp.y2,  RGB(52, 152, 219),  _T("游戏帮助"), 28);
     DrawButton(btnStart.x1, btnStart.y1, btnStart.x2, btnStart.y2, RGB(46, 204, 113),  _T("开始游戏"), 28);
     DrawButton(btnExit.x1,  btnExit.y1,  btnExit.x2,  btnExit.y2,  RGB(231, 76, 60),   _T("退出游戏"), 28);
-
     // 底部提示
     DrawCenteredText(60, startY + 3 * btnH + 2 * gap + 20, 740, startY + 3 * btnH + 2 * gap + 80, _T("请用鼠标点击按钮"), 20, RGB(120, 150, 190), _T("宋体"));
-
     // 等待鼠标点击并返回对应选项
     while (true) {
         MOUSEMSG m = GetMouseMsg();
@@ -273,7 +269,7 @@ int ShowMainMenu() {
         }
     }
 }
-
+//运行主循环，统计战绩
 void Run() {
     initgraph(800, 600, SHOWCONSOLE);
     InitGraphics();
