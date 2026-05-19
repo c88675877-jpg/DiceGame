@@ -12,6 +12,20 @@ struct Button {
 
 Button btnHelp, btnStart, btnExit;      // 主菜单按钮
 Button btnRoll;                         // 游戏中"掷骰子"按钮
+Button btnBack;                         // 结果界面"返回菜单"按钮
+Button btnHelpBack;                      //帮助界面返回按钮
+// 等待鼠标点击指定按钮
+bool WaitForButtonClick(Button btn) {
+    MOUSEMSG m;
+    while (true) {
+        m = GetMouseMsg();
+        if (m.uMsg == WM_LBUTTONDOWN) {
+            if (m.x >= btn.x1 && m.x <= btn.x2 && m.y >= btn.y1 && m.y <= btn.y2) {
+                return true;
+            }
+        }
+    }
+}
 
 // 通用圆角面板
 void DrawPanel(int x1, int y1, int x2, int y2, COLORREF fillColor, COLORREF borderColor) {
@@ -66,21 +80,21 @@ void DrawDiceFace(IMAGE* img, int value) {
     }
     SetWorkingImage(NULL);
 }
-
+//绘制背景板
 void DrawBackground() {
     SetWorkingImage(&imgBackground);
     cleardevice();
     setbkcolor(RGB(25, 55, 109));
     cleardevice();
-    setfillcolor(RGB(46, 125, 50));
-    fillroundrect(20, 15, 780, 95, 20, 20);
+    DrawPanel(20, 15, 780, 95, RGB(46, 125, 50), RGB(100, 160, 230));
     DrawCenteredText(20, 15, 780, 95, _T("骰子游戏"), 56, RGB(255, 255, 230), _T("黑体"));
     DrawPanel(60, 115, 740, 575, RGB(30, 40, 65), RGB(100, 160, 230));
     SetWorkingImage(NULL);
 }
-
+//绘制结算界面
 void DrawResultImage(IMAGE* img, const TCHAR* text) {
     SetWorkingImage(img);
+	img->Resize(250, 250);
     DWORD* pBuffer = GetImageBuffer();
     cleardevice();
     for (int i = 0; i < 220 * 100; i++) {
@@ -90,7 +104,7 @@ void DrawResultImage(IMAGE* img, const TCHAR* text) {
     DrawCenteredText(0, 0, 250, 200, text, 40, RGB(255, 255, 230), _T("黑体"));
     SetWorkingImage(NULL);
 }
-
+//资源初始化
 void InitGraphics() {
     srand((unsigned)time(NULL));
     for (int i = 0; i < 6; i++) {
@@ -108,7 +122,6 @@ void InitGraphics() {
 // 骰子滚动动画
 void ShowRolling(int x, int y) {
     for (int i = 0; i < 12; i++) {
-        putimage(x - 10, y - 10, 164, 84, &imgBackground, x - 10, y - 10, SRCCOPY);
         putimage(x, y, &imgDice[rand() % 6]);
         putimage(x + 80, y, &imgDice[rand() % 6]);
         Sleep(50 + i * 15);
@@ -119,11 +132,10 @@ void ShowRolling(int x, int y) {
 int RollDice() {
     int d1 = rand() % 6, d2 = rand() % 6;
     int diceX = 328, diceY = 290;
-    // 用背景图清除骰子区域和上一次的总和文字，避免黑色框和重叠
-    putimage(diceX - 10, diceY - 10, 164, 84, &imgBackground, diceX - 10, diceY - 10, SRCCOPY);
-    putimage(300, 390, 260, 60, &imgBackground, 300, 390, SRCCOPY);
+    // 背景覆盖上一次掷骰子的残留信息
+	putimage(diceX-10,diceY-10, 260,300, &imgBackground, diceX - 10, diceY - 10, SRCCOPY); 
     ShowRolling(diceX, diceY);
-    // 动画结束后重新绘制最终骰子和背景，确保不消失
+    // 动画结束后重新绘制最终骰子和背景
     putimage(diceX, diceY, &imgDice[d1]);
     putimage(diceX + 80, diceY, &imgDice[d2]);
     int sum = d1 + d2 + 2;
@@ -133,11 +145,13 @@ int RollDice() {
     return sum;
 }
 
-// 绘制游戏界面 (showRollBtn 控制是否显示掷骰子按钮)
-void DrawGameUI(int point, bool showRollBtn) {
-    putimage(0, 0, &imgBackground);
-    setbkmode(TRANSPARENT);
-
+// 绘制游戏界面显示目标点数和掷骰子按钮 (showRollBtn 控制是否显示掷骰子按钮)
+void DrawGameUI(bool showbackground,int point, bool showRollBtn) {
+    if (showbackground)
+    {
+        putimage(0, 0, &imgBackground);
+        setbkmode(TRANSPARENT);
+    }
     // 目标点数提示
     if (point > 0) {
         setfillcolor(RGB(255, 193, 7));
@@ -154,21 +168,10 @@ void DrawGameUI(int point, bool showRollBtn) {
     }
 }
 
-// 等待鼠标点击指定按钮
-bool WaitForButtonClick(Button btn) {
-    MOUSEMSG m;
-    while (true) {
-        m = GetMouseMsg();
-        if (m.uMsg == WM_LBUTTONDOWN) {
-            if (m.x >= btn.x1 && m.x <= btn.x2 && m.y >= btn.y1 && m.y <= btn.y2) {
-                return true;
-            }
-        }
-    }
-}
+
 
 GameStatus Game() {
-    DrawGameUI(0, true);
+    DrawGameUI(true ,0, true);
     int sum = RollDice();
     int point = 0;
     GameStatus status;
@@ -178,12 +181,8 @@ GameStatus Game() {
         status = CONTINUE;
         point = sum;
         // 只更新目标点数提示和按钮，保留骰子和总和显
-		DrawPanel(250, 118, 550, 165, RGB(255, 193, 7), RGB(200, 150, 50));
-        TCHAR str[50];
-        _stprintf_s(str, _T("目标点数: %d"), point);
-        DrawCenteredText(250, 118, 550, 165, str, 36, RGB(80, 40, 0), _T("黑体"));
-        btnRoll = { 340, 470, 460, 520 };
-        DrawButton(340, 470, 460, 520, RGB(46, 204, 113), _T("掷骰子"), 28);
+		DrawGameUI(false,point, true);
+		
     }
 
     while (status == CONTINUE) {
@@ -193,30 +192,31 @@ GameStatus Game() {
         else if (sum == 7) status = LOSE;
         else {
             // 本轮未分胜负，保留骰子结果，只重绘按钮
-            btnRoll = { 340, 470, 460, 520 };
-            DrawButton(340, 470, 460, 520, RGB(46, 204, 113), _T("掷骰子"), 28);
+			DrawGameUI(false ,point, true);
+            //btnRoll = { 340, 470, 460, 520 };
+            //DrawButton(340, 470, 460, 520, RGB(46, 204, 113), _T("掷骰子"), 28);
         }
     }
 
-    // 显示结果面板: 使用预先绘制的渐变图片，并在图片内绘制返回按钮
+    // 显示结果面板
     if (status == WIN) {
-		Sleep(2000); // 稍作停顿，增加胜利/失败的戏剧效果
+		Sleep(2000); // 稍作停顿
         putimage(275, 200, &imgWin);
     }
     else {
-        Sleep(2000); // 稍作停顿，增加胜利/失败的戏剧效果
+        Sleep(2000); // 稍作停顿
         putimage(275, 200, &imgLose);
     }
 
     // 返回按钮: 位置调整到结果图片内部底部
-    Button btnBack = { 320, 390, 480, 430 };
+    btnBack = { 320, 390, 480, 430 };
     DrawButton(320, 370, 480, 410, RGB(52, 152, 219), _T("返回菜单"), 24);
     WaitForButtonClick(btnBack);
 	return status;
 }
 
 void Help() {
-    DrawGameUI();
+    DrawGameUI(true,0,false);
     DrawPanel(100, 140, 700, 530, RGB(20, 30, 55), RGB(80, 140, 210));
 
     DrawCenteredText(100, 140, 700, 210, _T("游戏规则"), 40, RGB(255, 215, 0), _T("黑体"));
@@ -235,13 +235,13 @@ void Help() {
     outtextxy(170, 360, _T("目标点数 (获胜) 或 7 (失败)"));
 
     // 返回按钮: 面板内部底部居中
-    Button btnHelpBack = { 300, 470, 500, 510 };
+    btnHelpBack = { 300, 470, 500, 510 };
     DrawButton(300, 470, 500, 510, RGB(52, 152, 219), _T("返回主菜单"), 28);
     WaitForButtonClick(btnHelpBack);
 }
 
 int ShowMainMenu() {
-    DrawGameUI();
+    DrawGameUI(true, 0, false);
 
     // 标题
     DrawCenteredText(60, 170, 740, 220, _T("主菜单"), 44, RGB(255, 255, 255), _T("黑体"));
@@ -289,7 +289,7 @@ void Run() {
             if (res == WIN) wins++;
 
             // 战绩统计面板
-            DrawGameUI();
+            DrawGameUI(true, 0, false);
             DrawPanel(200, 180, 600, 440, RGB(20, 30, 55), RGB(100, 160, 230));
 
             DrawCenteredText(200, 180, 600, 240, _T("对局统计"), 36, RGB(255, 215, 0), _T("黑体"));
@@ -315,7 +315,7 @@ void Run() {
             break;
         }
         case 3:
-            DrawGameUI();
+            DrawGameUI(true, 0, false);
             DrawPanel(200, 200, 600, 420, RGB(20, 30, 55), RGB(100, 160, 230));
 
             DrawCenteredText(200, 200, 600, 260, _T("游戏结束"), 36, RGB(255, 215, 0), _T("黑体"));
